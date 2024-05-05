@@ -4,4 +4,6 @@ To use this script first you need to have discord already installed in your syst
 
 clone and run this script anywhere you like and it will install latest discord image from discord website in '/tmp' directory and extract its contents. Once the contents are extracted it will be copied to '/opt/Discord/' directory and then you can close the terminal and run discord so that it can update itself.
 
+Make Sure: File permissions are set correctly for all users to execute the script use `chmod +x discordupdate`
+
 Any Issue/Suggestions are highly appreciated!
