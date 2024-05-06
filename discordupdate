@@ -1,4 +1,6 @@
 #!/bin/sh
+# By: felix
+
 
 dis_dir="/opt/"
 download_folder="/tmp"
