@@ -1,11 +1,77 @@
 #!/bin/sh
 # By: felix
+# TO-DO: Implement a function that will check if the version downloading from wget command is same as the version installed in system.
 
-
-dis_dir="/opt/"
+opt_dir="/opt/"
+discord_dir="/opt/Discord"
+discord_bin="/opt/Discord/Discord"
+usr_bin="/usr/bin/Discord"
 download_folder="/tmp"
-printf "Running Discord updater Script\n"
-printf "Discord Directory is set to $dis_dir\n"
-printf "Downloading latest discord image into $download_folder Directory\n"
-cd $download_folder && wget --content-disposition "https://discord.com/api/download?platform=linux&format=tar.gz" && printf "Successfully downloaded discord latest version\n" && printf "Extracting" && tar -xvzf discord-*.tar.gz -C $dis_dir
 
+if [ ! -w $opt_dir ]; then
+    printf "[\033[0;31;40m-\033[0m] Dont have write permission to /opt directory please make sure to either run the script with superuser privileges or chown /opt directory to current user."
+    exit 1
+fi
+
+dis_download () {
+    printf "[\033[0;32;40m+\033[0m] Downloading latest discord image into $download_folder Directory\n"
+    if ! cd "$download_folder"; then
+        printf "[\033[0;31;40m-\033[0m] Failed to change directory to $download_folder\n"
+        exit 1
+    fi
+    if ! wget --progress=bar:force --content-disposition "https://discord.com/api/download?platform=linux&format=tar.gz"; then
+        printf "[\033[0;31;40m-\033[0m] Failed to Downlaod discord with wget. Make sure to check:\n1. You are connected to internet.\n2. wget is installed.\n"
+        exit 1
+    fi
+
+    printf "[\033[0;32;40m+\033[0m] Successfully downloaded discord latest version\n[\033[0;32;40m+\033[0m] Extracting\n"
+    tar -xvzf discord-*.tar.gz -C $opt_dir 1>/dev/null && printf "[\033[0;32;40m+\033[0m] Successfully extracted discord archieve\n" || { 
+        printf "[\033[0;31;40m-\033[0m] Failed to extract discord archieve.\n"
+        exit 1
+    }
+}
+
+dis_desktop_entry () {
+    local content="[Desktop Entry]
+Name=Discord
+StartupWMClass=discord
+Comment=All-in-one voice and text chat for gamers that's free, secure, and works on both your desktop and phone.
+GenericName=Internet Messenger
+Exec=/usr/bin/Discord
+Icon=/opt/Discord/discord.png
+Type=Application
+Categories=Network;InstantMessaging;
+Path=/usr/bin
+"
+    printf "[\033[0;32;40m+\033[0m] Adding Discord desktop entry\n"
+    cat << EOF > $discord_dir/discord.desktop
+$content
+EOF
+}
+
+dis_linking() {
+    printf "[\033[0;32;40m+\033[0m] Creating softlink in /usr/bin/Discord.\n[\033[0;32;40m+\033[0m] Will require superuser privilege.\n"
+    sudo ln -sf $discord_bin $usr_bin && sudo cp -r /opt/Discord/discord.desktop /usr/share/applications || printf "[\033[0;31;40m-\033[0m] Failed to create symlink at $usr_bin (privilage error?)\n"
+}
+# Initial display of script
+printf "[\033[0;32;40m+\033[0m] Running Discord updater Script\n"
+printf "[\033[0;33;40m!\033[0m] Discord Directory is set to $opt_dir\n"
+
+# Checking if discord directory exists or not:
+printf "[\033[0;32;40m+\033[0m] Checking for discord directory in '$discord_dir'.\n"
+
+if [[ ! -d "$discord_dir" ]]; then
+    printf "[\033[0;33;40m!\033[0m] $discord_dir does not exist, Installing and setting up discord from scratch.\n"
+    dis_download
+    dis_desktop_entry
+    
+    dis_linking
+else
+    printf "[\033[0;32;40m+\033[0m] $discord_dir found. Updating discord.\n"
+    dis_download
+    dis_desktop_entry
+fi
+
+if [ $? -eq 0 ]; then
+    printf "[\033[0;32;40m+\033[0m] The script executed successfully. Restart to see changes.\n"
+fi
